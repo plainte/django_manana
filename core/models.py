@@ -62,3 +62,6 @@ class Order(models.Model):
 
   def __str__(self):
     return self.user.username
+
+  def item_count(self):
+    return sum(item.quantity for item in self.items.all())
