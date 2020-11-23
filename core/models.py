@@ -49,6 +49,20 @@ class OrderItem(models.Model):
   item = models.ForeignKey(Item, on_delete=models.CASCADE)
   quantity = models.IntegerField(default=1)
 
+  def get_total_item_price(self):
+    return self.quantity * self.item.price
+
+  def get_total_discount_item_price(self):
+    return self.quantity * self.item.discount_price if self.item.discount_price else 0
+
+  def get_amount_saved(self):
+    return self.get_total_item_price() - self.get_total_discount_item_price()
+
+  def get_final_price(self):
+    if self.item.discount_price:
+      return self.get_total_discount_item_price()
+    return self.get_total_item_price()
+
   def __str__(self):
     return f"{self.quantity} of {self.item.title}"
 
@@ -65,3 +79,9 @@ class Order(models.Model):
 
   def item_count(self):
     return sum(item.quantity for item in self.items.all())
+
+  def get_total_price(self):
+    return sum(item.get_final_price() for item in self.items.all())
+
+  def get_total_amount_saved(self):
+    return sum(item.get_amount_saved() for item in self.items.all())
