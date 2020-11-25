@@ -5,11 +5,24 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, View
 from django.utils import timezone
+from .forms import CheckoutForm
 from .models import Item, OrderItem, Order
 
 # Create your views here.
-def checkout(request):
-  return render(request, "checkout.html")
+class CheckoutView(View):
+  def get(self, *args, **kwargs):
+    # form
+    form = CheckoutForm()
+    context = {
+      'form': form
+    }
+    return render(self.request, "checkout.html", context)
+
+  def post(self, *args, **kwargs):
+    form = CheckoutForm(self.request.POST or None)
+    if form.is_valid():
+      print("The form is valid")
+      return redirect('core:checkout')
 
 class HomeView(ListView):
   model = Item
@@ -119,7 +132,6 @@ def remove_single_item_from_cart(request, slug):
       else:
         order.items.remove(order_item)
   return redirect("core:order-summary")
-
 
 @login_required
 def delete_from_cart(request, slug):
