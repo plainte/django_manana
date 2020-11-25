@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.shortcuts import reverse
+from django_countries.fields import CountryField
 
 # Create your models here.
 
@@ -56,7 +57,10 @@ class OrderItem(models.Model):
     return self.quantity * self.item.discount_price if self.item.discount_price else 0
 
   def get_amount_saved(self):
-    return self.get_total_item_price() - self.get_total_discount_item_price() if self.get_total_discount_item_price() else 0
+    original_price = self.get_total_item_price()
+    discounted_price = self.get_total_discount_item_price()
+    amount_saved = original_price - discounted_price
+    return amount_saved if discounted_price != 0 else 0
 
   def get_final_price(self):
     if self.item.discount_price:
@@ -68,11 +72,14 @@ class OrderItem(models.Model):
 
 
 class Order(models.Model):
-  user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+  user = models.ForeignKey(settings.AUTH_USER_MODEL, 
+                           on_delete=models.CASCADE)
   items = models.ManyToManyField(OrderItem)
   start_date = models.DateTimeField(auto_now_add=True)
   ordered_date = models.DateTimeField()
   ordered = models.BooleanField(default=False)
+  billing_address = models.ForeignKey(
+    'BillingAddress', on_delete=models.SET_NULL, blank=True, null=True)
 
   def __str__(self):
     return self.user.username
@@ -85,3 +92,13 @@ class Order(models.Model):
 
   def get_total_amount_saved(self):
     return sum(item.get_amount_saved() for item in self.items.all())
+
+class BillingAddress(models.Model):
+  user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+  street_address = models.CharField(max_length=100)
+  apartment_address = models.CharField(max_length=100)
+  country = CountryField()
+  zip = models.CharField(max_length=100)
+
+  def __str__(self):
+    return self.user.username
